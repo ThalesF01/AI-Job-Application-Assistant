@@ -1,0 +1,67 @@
+# ==========================
+# Node / Backend
+# ==========================
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# AWS SDK / credenciais temporárias
+.aws/
+
+# ==========================
+# Frontend / Next.js
+# ==========================
+.next/
+out/
+*.log
+*.lock
+
+# Env files do frontend
+.env*
+!.env.example   # se quiser manter um modelo para referência, sem chave real
+
+# ==========================
+# Editor / OS
+# ==========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+*.tmp
+*.orig
+
+# ==========================
+# MacOS
+# ==========================
+.DS_Store
+
+# ==========================
+# Logs
+# ==========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# ==========================
+# Coverage / Testing
+# ==========================
+coverage/
+*.lcov
+
+# ==========================
+# Outros arquivos temporários
+# ==========================
+*.tgz
+*.zip
+*.tar.gz
