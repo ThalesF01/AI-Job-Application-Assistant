@@ -24,3 +24,10 @@ export type MatchResponse = {
   score: number; // 0..1
   topKeywords?: string[];
 };
+
+export type UploadResponse = {
+  resume_id: string;
+  parsed?: ParsedResume;
+  extractedText?: string; // <-- novo
+  summary?: string | null;
+};
