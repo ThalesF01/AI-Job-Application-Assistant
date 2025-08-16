@@ -1,6 +1,8 @@
+// app.js
 import express from "express";
 import cors from "cors";
 import jobApplicationsRoutes from "./routes/jobApplications.js";
+import aiRoutes from "./routes/aiRoutes.js";
 
 const app = express();
 
@@ -10,6 +12,10 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// rotas
 app.use("/api/applications", jobApplicationsRoutes);
+app.use("/api/ai", aiRoutes);
 
 export default app;

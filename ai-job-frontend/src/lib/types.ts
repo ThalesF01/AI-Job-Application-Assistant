@@ -1,3 +1,4 @@
+// src/lib/types.ts
 export type ParsedResume = {
   name?: string;
   email?: string;
@@ -25,9 +26,16 @@ export type MatchResponse = {
   topKeywords?: string[];
 };
 
+/**
+ * UploadResponse — o backend retorna isso ao enviar currículo
+ * - resume_id: id gerado
+ * - parsed: objeto com parsed resume (pode ser vazio/placeholder)
+ * - extractedText: texto extraído do PDF/DOCX (pode ser string vazia)
+ * - summary: resumo gerado (ou null)
+ */
 export type UploadResponse = {
   resume_id: string;
   parsed?: ParsedResume;
-  extractedText?: string; // <-- novo
+  extractedText?: string | null;
   summary?: string | null;
 };

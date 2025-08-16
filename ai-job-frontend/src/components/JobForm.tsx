@@ -1,7 +1,15 @@
+// src/components/JobForm.tsx
 "use client";
 
 import { useState } from "react";
-import { uploadResume, matchJob, generateOptimizedResume, generateCoverLetter, simulateInterview } from "@/lib/api";
+import {
+  uploadResume,
+  matchJob,
+  generateOptimizedResume,
+  generateCoverLetter,
+  simulateInterview,
+  generateResumeSummaryAPI
+} from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -16,8 +24,8 @@ export default function JobForm() {
   const [loading, setLoading] = useState<boolean>(false);
 
   const [parsedPreview, setParsedPreview] = useState<string>("");
-  const [extractedText, setExtractedText] = useState<string>(""); // texto extraído
-  const [resumeSummary, setResumeSummary] = useState<string>(""); // resumo IA
+  const [extractedText, setExtractedText] = useState<string>(""); 
+  const [resumeSummary, setResumeSummary] = useState<string>(""); 
   const [summaryExpanded, setSummaryExpanded] = useState<boolean>(false);
   const [matchScore, setMatchScore] = useState<number | null>(null);
   const [optimizedResumeMD, setOptimizedResumeMD] = useState<string>("");
@@ -33,21 +41,24 @@ export default function JobForm() {
     setSummaryExpanded(false);
 
     try {
-      const { resume_id, parsed, extractedText: extText, summary } = await uploadResume(file);
-
+      const { resume_id, parsed, extractedText: extText } = await uploadResume(file);
       setResumeId(resume_id);
 
       const preview = parsed?.skills?.length
         ? `**Skills:** ${parsed.skills.join(", ")}`
         : "Currículo processado.";
       setParsedPreview(preview);
-
       setExtractedText(extText || "");
 
-      if (summary && summary.trim().length > 0) {
-        setResumeSummary(summary);
-      } else {
-        setResumeSummary("");
+      // ✅ Chamada ao resumo IA após extração de texto
+      if (extText && extText.trim()) {
+        try {
+          const { summary } = await generateResumeSummaryAPI(extText);
+          setResumeSummary(summary || "");
+        } catch (err) {
+          console.error("[JobForm] Falha ao gerar resumo via API:", err);
+          setResumeSummary("");
+        }
       }
     } catch (e: unknown) {
       console.error(e);
@@ -62,7 +73,6 @@ export default function JobForm() {
       <div>
         <div className="text-sm text-slate-100 mb-3" dangerouslySetInnerHTML={{ __html: parsedPreview.replace(/\n/g, "<br/>") }} />
 
-        {/* Bloco maior com texto extraído ( rolável ) */}
         {extractedText ? (
           <div className="mb-3">
             <div className="text-xs text-slate-400 mb-1">Texto extraído (visualização):</div>
@@ -72,10 +82,8 @@ export default function JobForm() {
           <div className="text-xs text-slate-400 mb-3">Nenhum texto legível extraído do arquivo.</div>
         )}
 
-        {/* Resumo da IA (no mesmo bloco, abaixo) */}
         <div>
           <div className="text-xs text-slate-400 mb-1">Resumo (IA):</div>
-
           {resumeSummary ? (
             <div>
               <div className="text-slate-100">
@@ -163,7 +171,6 @@ export default function JobForm() {
               className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer"
               aria-label="Selecionar currículo"
             />
-
             <div className="w-full py-2 px-4 bg-slate-800/60 border border-slate-700 rounded-lg flex items-center justify-between gap-3 shadow-sm hover:bg-slate-800 transition-colors">
               <div className="flex items-center gap-3 min-w-0">
                 <span className="inline-flex items-center justify-center h-9 w-9 rounded-md bg-slate-700/60 text-slate-200">📁</span>
@@ -172,7 +179,6 @@ export default function JobForm() {
                   <div className="text-xs text-slate-400">{file ? `${(file.size / 1024).toFixed(1)} KB` : "PDF ou DOCX • máximo X MB"}</div>
                 </div>
               </div>
-
               <div className="flex items-center gap-2">
                 <span className="text-xs text-slate-300">Arraste ou clique</span>
                 <span className="hidden md:inline-block px-3 py-1 rounded bg-slate-700 text-xs text-slate-200">Selecionar</span>
@@ -191,7 +197,6 @@ export default function JobForm() {
         </Button>
       </div>
 
-      {/* Único bloco de resultado: prévia + texto extraído + resumo (tudo junto) */}
       {(parsedPreview || extractedText || resumeSummary) && (
         <ResultBlock title="Prévia do currículo" content={renderPreviewContent()} />
       )}

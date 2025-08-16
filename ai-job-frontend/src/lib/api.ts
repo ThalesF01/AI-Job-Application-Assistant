@@ -11,14 +11,17 @@ import type {
 /**
  * Config
  */
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL; // (opcional) ex: http://localhost:5000/api/applications
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"; // ex: http://localhost:5000
+const BASE = process.env.NEXT_PUBLIC_API_BASE_URL; // opcional
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"; // Node backend
+const AI_URL = process.env.NEXT_PUBLIC_AI_URL || "http://localhost:8000"; // FastAPI (fallback)
 const MOCK = process.env.NEXT_PUBLIC_MOCK === "1";
 
 // Base que será usada para chamadas "API" (por padrão aponta para /api/applications no backend)
 const API_BASE = BASE ?? `${BACKEND_URL}/api/applications`;
 
 console.log("API_BASE:", API_BASE);
+console.log("BACKEND_URL:", BACKEND_URL);
+console.log("AI_URL (dev/fallback):", AI_URL);
 console.log("MOCK:", MOCK);
 
 /**
@@ -47,14 +50,9 @@ async function safeFetch<T>(url: string, init?: RequestInit, mock?: T): Promise<
 }
 
 /**
- * Tipagem do retorno do upload
- */
-
-
-/**
  * Upload de currículo
  * - envia para BACKEND_URL/api/applications/upload
- * - retorna resume_id, parsed e summary (se backend retornar)
+ * - retorna resume_id, parsed, extractedText e summary (se backend retornar)
  */
 export async function uploadResume(file: File): Promise<UploadResponse> {
   const formData = new FormData();
@@ -100,6 +98,42 @@ export async function parseResume(resumeId: string): Promise<{ parsed: ParsedRes
       skills: ["Python", "TensorFlow", "PyTorch"]
     }
   });
+}
+
+/**
+ * Geração de resumo IA (via Node backend)
+ *
+ * - POST ${BACKEND_URL}/api/ai/summary
+ * - body: { resumeText }
+ * - retorna: { summary: string | null }
+ */
+export async function generateResumeSummaryAPI(resumeText: string): Promise<{ summary: string | null }> {
+  const url = `${BACKEND_URL}/api/ai/summary`; // chama o Node (sem CORS do browser)
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resumeText }),
+    });
+
+    if (!res.ok) {
+      // detalhar erro para facilitar debug
+      let details: unknown;
+      try {
+        details = await res.json();
+      } catch {
+        details = await res.text();
+      }
+      throw new Error(`Falha ao gerar resumo: ${res.status} - ${JSON.stringify(details)}`);
+    }
+
+    const json = await res.json();
+    // json: { summary: string | null } ou { error: ... }
+    return json;
+  } catch (err) {
+    console.error("[generateResumeSummaryAPI] erro:", err);
+    throw err;
+  }
 }
 
 /**
