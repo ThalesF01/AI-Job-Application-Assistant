@@ -4,6 +4,7 @@ import path from "path";
 import axios from "axios";
 import { uploadFile } from "../services/s3Service.js";
 import { saveApplication } from "../services/dynamoService.js";
+import { generateOptimizedResume as aiGenerateOptimizedResume,  generateCoverLetter as aiGenerateCoverLetter, simulateInterview as aiSimulateInterview  } from "../services/aiService.js";
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -146,5 +147,105 @@ export const createApplication = async (req, res) => {
     } catch (cleanupErr) {
       console.warn("[createApplication] falha ao remover arquivo local:", cleanupErr?.message || cleanupErr);
     }
+  }
+};
+
+// Novo handler: gerar currículo otimizado (chamado pela rota)
+export const generateOptimizedResume = async (req, res) => {
+  try {
+    const { resumeText, resume_id, jobDescription } = req.body;
+
+    if (!jobDescription || !String(jobDescription).trim()) {
+      return res.status(400).json({ error: "jobDescription é obrigatório." });
+    }
+
+    // PRIORIDADE: use resumeText enviado pelo frontend.
+    let textToUse = resumeText && String(resumeText).trim() ? String(resumeText).trim() : null;
+
+    // Se não veio resumeText, você pode tentar buscar do Dynamo/S3 usando resume_id.
+    // Por simplicidade aqui retornamos erro para que front envie extractedText (recomendado).
+    if (!textToUse) {
+      return res.status(400).json({ error: "resumeText ausente. Envie o texto extraído do currículo (campo 'resumeText')." });
+    }
+
+    // Chama aiService (Groq)
+    let optimized = null;
+    try {
+      optimized = await aiGenerateOptimizedResume(textToUse, jobDescription);
+    } catch (aiErr) {
+      console.error("[generateOptimizedResume] erro aiService:", aiErr?.message || aiErr);
+      optimized = null;
+    }
+
+    return res.json({ optimizedResumeMarkdown: optimized });
+  } catch (err) {
+    console.error("[generateOptimizedResume] erro:", err);
+    return res.status(500).json({ error: "Erro ao gerar currículo otimizado", details: err?.message ?? String(err) });
+  }
+};
+
+// Novo handler: gerar carta de apresentação (chamado pela rota)
+export const generateCoverLetter = async (req, res) => {
+  try {
+    const { resumeText, jobDescription } = req.body;
+
+    if (!jobDescription || !String(jobDescription).trim()) {
+      return res.status(400).json({ error: "jobDescription é obrigatório." });
+    }
+
+    if (!resumeText || !String(resumeText).trim()) {
+      return res.status(400).json({ error: "resumeText é obrigatório para gerar a carta." });
+    }
+
+    let coverLetter = null;
+    try {
+      coverLetter = await aiGenerateCoverLetter(resumeText, jobDescription);
+    } catch (aiErr) {
+      console.error("[generateCoverLetter] erro aiService:", aiErr?.message || aiErr);
+      coverLetter = null;
+    }
+
+    return res.json({ coverLetterMarkdown: coverLetter });
+  } catch (err) {
+    console.error("[generateCoverLetter] erro:", err);
+    return res.status(500).json({ error: "Erro ao gerar carta de apresentação", details: err?.message ?? String(err) });
+  }
+};
+
+// Novo handler: simulação de entrevista (chamado pela rota)
+export const generateInterviewSimulation = async (req, res) => {
+  try {
+    const { resumeText, resume_id, jobDescription } = req.body;
+
+    if (!jobDescription || !String(jobDescription).trim()) {
+      return res.status(400).json({ error: "jobDescription é obrigatório." });
+    }
+
+    // Prioriza resumeText enviado pelo front (recomendado)
+    const textToUse = resumeText && String(resumeText).trim() ? String(resumeText).trim() : null;
+    if (!textToUse) {
+      return res.status(400).json({ error: "resumeText ausente. Envie o texto extraído do currículo (campo 'resumeText')." });
+    }
+
+    let qa = [];
+    try {
+      const result = await aiSimulateInterview(textToUse, jobDescription);
+      // result deve ser um array [{ question, answer }, ...]
+      if (Array.isArray(result) && result.length > 0) {
+        qa = result.map((it) => ({
+          question: it.question ?? it.pergunta ?? "",
+          answer: it.answer ?? it.resposta ?? ""
+        })).filter(x => x.question && x.answer);
+      }
+    } catch (aiErr) {
+      console.error("[generateInterviewSimulation] erro aiService:", aiErr?.message || aiErr);
+      qa = [];
+    }
+
+    // sempre retornar objeto previsível
+    return res.json({ qa });
+  } catch (err) {
+    console.error("[generateInterviewSimulation] erro:", err);
+    return res.status(500).json({ error: "Erro ao simular entrevista", details: err?.message ?? String(err) });
   }
 };

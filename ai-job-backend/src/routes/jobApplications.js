@@ -1,7 +1,7 @@
 // src/routes/jobApplications.js
 import express from "express";
 import multer from "multer";
-import { createApplication } from "../controllers/applicationsController.js";
+import { createApplication, generateOptimizedResume, generateCoverLetter, generateInterviewSimulation } from "../controllers/applicationsController.js";
 
 const router = express.Router();
 const upload = multer(); // memory storage
@@ -9,6 +9,13 @@ const upload = multer(); // memory storage
 // upload e processamento do currículo
 router.post("/upload", upload.single("resume"), createApplication);
 
-// rota /parse removida por enquanto (você já comentou que não precisa)
+// rota para gerar currículo otimizado (body: { resumeText, jobDescription, resume_id? })
+router.post("/generate/resume", express.json(), generateOptimizedResume);
+
+// rota para gerar carta apresentação (body: { resumeText, jobDescription, resume_id? })
+router.post("/generate/cover-letter", express.json(), generateCoverLetter);
+
+// rota para simulação de entrevista (body: { resumeText, jobDescription })
+router.post("/generate/interview", express.json(), generateInterviewSimulation);
 
 export default router;

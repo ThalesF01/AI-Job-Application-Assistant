@@ -17,13 +17,14 @@ export type CoverLetterResponse = {
   coverLetterMarkdown: string;
 };
 
-export type InterviewSimResponse = {
-  qa: Array<{ question: string; answer: string }>;
+// types.ts
+export type InterviewQuestion = {
+  question: string;
+  answer: string;
 };
 
-export type MatchResponse = {
-  score: number; // 0..1
-  topKeywords?: string[];
+export type InterviewSimulationResponse = {
+  questionsAndAnswers: InterviewQuestion[];
 };
 
 /**

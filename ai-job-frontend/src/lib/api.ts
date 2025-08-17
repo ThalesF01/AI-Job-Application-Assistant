@@ -3,10 +3,9 @@ import type {
   ParsedResume,
   OptimizeResumeResponse,
   CoverLetterResponse,
-  InterviewSimResponse,
-  MatchResponse,
-  UploadResponse
-} from "./types";
+  InterviewSimulationResponse,
+  UploadResponse,
+  } from "./types";
 
 /**
  * Config
@@ -136,80 +135,87 @@ export async function generateResumeSummaryAPI(resumeText: string): Promise<{ su
   }
 }
 
-/**
- * Score de aderência
- */
-export async function matchJob(resumeId: string, jobDescription: string): Promise<MatchResponse> {
-  return safeFetch<MatchResponse>(
-    "/match",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ resume_id: resumeId, job_description: jobDescription }),
-    },
-    { score: 0.82, topKeywords: ["RAG", "LLM", "AWS", "TensorFlow"] }
-  );
-}
-
-/**
- * Currículo otimizado
- */
 export async function generateOptimizedResume(
   resumeId: string,
-  jobDescription: string
+  jobDescription: string,
+  resumeText?: string
 ): Promise<OptimizeResumeResponse> {
-  return safeFetch<OptimizeResumeResponse>(
-    "/generate/resume",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ resume_id: resumeId, job_description: jobDescription }),
-    },
-    {
-      optimizedResumeMarkdown: `## Resumo Profissional\n- Analista de Sistemas focado em IA...`
-    }
-  );
+  const url = `${BACKEND_URL}/api/applications/generate/resume`;
+
+  const body: Record<string, unknown> = { jobDescription };
+  if (resumeId) body.resume_id = resumeId;
+  if (resumeText) body.resumeText = resumeText;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const details = await res.text();
+    throw new Error(`Erro ao gerar currículo otimizado: ${res.status} - ${details}`);
+  }
+
+  const json = await res.json();
+  // json.optimizedResumeMarkdown (pode ser null)
+  return {
+    optimizedResumeMarkdown: json.optimizedResumeMarkdown ?? "",
+  };
 }
 
-/**
- * Carta de apresentação
- */
 export async function generateCoverLetter(
   resumeId: string,
-  jobDescription: string
+  jobDescription: string,
+  resumeText?: string
 ): Promise<CoverLetterResponse> {
-  return safeFetch<CoverLetterResponse>(
-    "/generate/cover",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ resume_id: resumeId, job_description: jobDescription }),
-    },
-    {
-      coverLetterMarkdown: `Prezados,\n\nTenho experiência prática em IA aplicada...`
-    }
-  );
+  const url = `${BACKEND_URL}/api/applications/generate/cover-letter`;
+
+  const body: Record<string, unknown> = { jobDescription };
+  if (resumeId) body.resume_id = resumeId;
+  if (resumeText) body.resumeText = resumeText;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const details = await res.text();
+    throw new Error(`Erro ao gerar carta de apresentação: ${res.status} - ${details}`);
+  }
+
+  const json = await res.json();
+  // json.coverLetterMarkdown (pode ser null)
+  return {
+    coverLetterMarkdown: json.coverLetterMarkdown ?? "",
+  };
 }
 
-/**
- * Simulação de entrevista
- */
+// aiClient.ts ou service.ts (onde você fez generateCoverLetter)
 export async function simulateInterview(
   resumeId: string,
-  jobDescription: string
-): Promise<InterviewSimResponse> {
-  return safeFetch<InterviewSimResponse>(
-    "/simulate/interview",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ resume_id: resumeId, job_description: jobDescription }),
-    },
-    {
-      qa: [
-        { question: "Explique RAG em poucas linhas.", answer: "RAG combina recuperação de contexto..." },
-        { question: "Como você faria deploy na AWS?", answer: "ECS Fargate, S3 para assets, RDS para dados..." },
-      ],
-    }
-  );
+  jobDescription: string,
+  resumeText?: string
+): Promise<{ qa: Array<{ question: string; answer: string }> }> {
+  const url = `${BACKEND_URL}/api/applications/generate/interview`;
+
+  const body: Record<string, unknown> = { jobDescription };
+  if (resumeId) body.resume_id = resumeId;
+  if (resumeText) body.resumeText = resumeText;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const details = await res.text();
+    throw new Error(`Erro ao gerar simulação de entrevista: ${res.status} - ${details}`);
+  }
+
+  const json = await res.json();
+  return { qa: json.qa ?? [] };
 }
