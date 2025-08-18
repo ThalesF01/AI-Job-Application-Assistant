@@ -10,30 +10,38 @@ export type ParsedResume = {
 };
 
 export type OptimizeResumeResponse = {
-  optimizedResumeMarkdown: string;
+  optimizedResumeMarkdown: string | null;
+  originalScore?: number | null;
+  optimizedScore?: number | null;
+  strengths?: string[];
+  gaps?: string[];
+  behavioralAnalysis?: string | null;
 };
 
 export type CoverLetterResponse = {
-  coverLetterMarkdown: string;
+  coverLetterMarkdown: string | null;
 };
 
-// types.ts
+export type NewResumeResponse = {
+  newResume: string | null;
+  changes?: {
+    added?: string[];
+    removed?: string[];
+    reorganized?: string[];
+  };
+  explanation?: string | null;
+};
+
 export type InterviewQuestion = {
   question: string;
   answer: string;
 };
 
 export type InterviewSimulationResponse = {
-  questionsAndAnswers: InterviewQuestion[];
+  qa: InterviewQuestion[];
+  interviewerQuestions: string[];
 };
 
-/**
- * UploadResponse — o backend retorna isso ao enviar currículo
- * - resume_id: id gerado
- * - parsed: objeto com parsed resume (pode ser vazio/placeholder)
- * - extractedText: texto extraído do PDF/DOCX (pode ser string vazia)
- * - summary: resumo gerado (ou null)
- */
 export type UploadResponse = {
   resume_id: string;
   parsed?: ParsedResume;

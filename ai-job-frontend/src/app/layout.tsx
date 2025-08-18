@@ -18,9 +18,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <p className="text-slate-300">Otimize currículo, carta e simule entrevistas com IA</p>
           </header>
           {children}
-          <footer className="mt-16 text-xs text-slate-400">
-            Feito por Thales Fiscus — Portfólio de IA
-          </footer>
+          <footer className="mt-16 text-xs text-slate-400 text-center">
+  Feito por Thales Fiscus —{" "}
+  <a
+    href="https://www.linkedin.com/in/thalesf01/"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-slate-300 hover:text-slate-100 underline"
+  >
+    LinkedIn
+  </a>
+</footer>
+
         </div>
       </body>
     </html>

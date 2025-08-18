@@ -4,7 +4,12 @@ import path from "path";
 import axios from "axios";
 import { uploadFile } from "../services/s3Service.js";
 import { saveApplication } from "../services/dynamoService.js";
-import { generateOptimizedResume as aiGenerateOptimizedResume,  generateCoverLetter as aiGenerateCoverLetter, simulateInterview as aiSimulateInterview  } from "../services/aiService.js";
+import {
+  generateOptimizedResume as aiGenerateOptimizedResume,
+  generateCoverLetter as aiGenerateCoverLetter,
+  simulateInterview as aiSimulateInterview,
+  generateNewResume as aiGenerateNewResume,
+} from "../services/aiService.js";
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -134,7 +139,7 @@ export const createApplication = async (req, res) => {
       message: "Aplicação salva",
       resume_id: id,
       application,
-      parsed: { skills: [] }, // placeholder (você disse que não registra name/email por enquanto)
+      parsed: { skills: [] }, // placeholder
       extractedText,
       summary,
     });
@@ -168,16 +173,103 @@ export const generateOptimizedResume = async (req, res) => {
       return res.status(400).json({ error: "resumeText ausente. Envie o texto extraído do currículo (campo 'resumeText')." });
     }
 
-    // Chama aiService (Groq)
-    let optimized = null;
+    // Chama aiService (Groq) — espera-se um objeto com vários campos
+    let optimizedResult = null;
     try {
-      optimized = await aiGenerateOptimizedResume(textToUse, jobDescription);
+      optimizedResult = await aiGenerateOptimizedResume(textToUse, jobDescription);
     } catch (aiErr) {
       console.error("[generateOptimizedResume] erro aiService:", aiErr?.message || aiErr);
-      optimized = null;
+      optimizedResult = null;
     }
 
-    return res.json({ optimizedResumeMarkdown: optimized });
+    // Fallback: tentar proxy para AI_SERVICE_URL (se configurado)
+    if (!optimizedResult) {
+      try {
+        const aiRes = await axios.post(
+          `${AI_SERVICE_URL}/optimize`,
+          { resumeText: textToUse, jobDescription },
+          { timeout: 120000 }
+        );
+        optimizedResult = aiRes?.data ?? null;
+      } catch (proxyErr) {
+        console.warn("[generateOptimizedResume] fallback FastAPI falhou:", proxyErr?.message || proxyErr);
+        optimizedResult = null;
+      }
+    }
+
+    // normalized response shape
+    if (!optimizedResult) {
+      return res.json({
+        optimizedResumeMarkdown: null,
+        originalScore: null,
+        optimizedScore: null,
+        strengths: [],
+        gaps: [],
+        behavioralAnalysis: null,
+      });
+    }
+
+    // if ai returned a raw string (old behavior), wrap it
+    if (typeof optimizedResult === "string") {
+      return res.json({
+        optimizedResumeMarkdown: optimizedResult,
+        originalScore: null,
+        optimizedScore: null,
+        strengths: [],
+        gaps: [],
+        behavioralAnalysis: null,
+      });
+    }
+
+    // try to pull fields with flexible keys
+    const optimizedResumeMarkdown =
+      optimizedResult.optimizedResumeMarkdown ??
+      optimizedResult.optimized_resume ??
+      optimizedResult.optimizedResume ??
+      optimizedResult.optimizedText ??
+      optimizedResult.resume ??
+      null;
+
+    const originalScore =
+      optimizedResult.originalScore ??
+      optimizedResult.original_score ??
+      optimizedResult.original_match_score ??
+      null;
+
+    const optimizedScore =
+      optimizedResult.optimizedScore ??
+      optimizedResult.optimized_score ??
+      optimizedResult.new_score ??
+      null;
+
+    const strengths =
+      Array.isArray(optimizedResult.strengths) && optimizedResult.strengths.length > 0
+        ? optimizedResult.strengths
+        : Array.isArray(optimizedResult.strength) && optimizedResult.strength.length > 0
+        ? optimizedResult.strength
+        : [];
+
+    const gaps =
+      Array.isArray(optimizedResult.gaps) && optimizedResult.gaps.length > 0
+        ? optimizedResult.gaps
+        : Array.isArray(optimizedResult.missing) && optimizedResult.missing.length > 0
+        ? optimizedResult.missing
+        : [];
+
+    const behavioralAnalysis =
+      optimizedResult.behavioralAnalysis ??
+      optimizedResult.behavioral_analysis ??
+      optimizedResult.behavior_description ??
+      null;
+
+    return res.json({
+      optimizedResumeMarkdown,
+      originalScore,
+      optimizedScore,
+      strengths,
+      gaps,
+      behavioralAnalysis,
+    });
   } catch (err) {
     console.error("[generateOptimizedResume] erro:", err);
     return res.status(500).json({ error: "Erro ao gerar currículo otimizado", details: err?.message ?? String(err) });
@@ -205,12 +297,111 @@ export const generateCoverLetter = async (req, res) => {
       coverLetter = null;
     }
 
+    // fallback proxy
+    if (!coverLetter) {
+      try {
+        const aiRes = await axios.post(`${AI_SERVICE_URL}/cover-letter`, { resumeText, jobDescription }, { timeout: 120000 });
+        coverLetter = aiRes?.data?.coverLetter ?? aiRes?.data?.cover_letter ?? aiRes?.data?.coverLetterMarkdown ?? aiRes?.data?.coverLetterMarkdown ?? null;
+      } catch (proxyErr) {
+        console.warn("[generateCoverLetter] fallback FastAPI falhou:", proxyErr?.message || proxyErr);
+        coverLetter = null;
+      }
+    }
+
     return res.json({ coverLetterMarkdown: coverLetter });
   } catch (err) {
     console.error("[generateCoverLetter] erro:", err);
     return res.status(500).json({ error: "Erro ao gerar carta de apresentação", details: err?.message ?? String(err) });
   }
 };
+
+// Novo handler: gerar carta de apresentação (chamado pela rota)
+export const generateNewResume = async (req, res) => {
+  try {
+    const { resumeText } = req.body;
+
+    if (!resumeText || !String(resumeText).trim()) {
+      return res.status(400).json({ error: "resumeText é obrigatório para gerar o novo currículo." });
+    }
+
+    const textToUse = String(resumeText).trim();
+    let newResumeResult = null;
+
+    // Chama aiService principal
+    try {
+      newResumeResult = await aiGenerateNewResume(textToUse);
+    } catch (aiErr) {
+      console.error("[generateNewResume] erro aiService:", aiErr?.message || aiErr);
+      newResumeResult = null;
+    }
+
+    // Fallback: tenta proxy FastAPI
+    if (!newResumeResult) {
+      try {
+        const aiRes = await axios.post(
+          `${AI_SERVICE_URL}/new-resume`,
+          { resumeText: textToUse },
+          { timeout: 120000 }
+        );
+        newResumeResult = aiRes?.data ?? null;
+      } catch (proxyErr) {
+        console.warn("[generateNewResume] fallback FastAPI falhou:", proxyErr?.message || proxyErr);
+        newResumeResult = null;
+      }
+    }
+
+    // Normaliza a resposta
+    if (!newResumeResult) {
+      return res.json({
+        newResume: null,
+        changes: { added: [], removed: [], reorganized: [] },
+        explanation: null,
+      });
+    }
+
+    // Se voltou string (modo antigo), embrulha em objeto
+    if (typeof newResumeResult === "string") {
+      return res.json({
+        newResume: newResumeResult,
+        changes: { added: [], removed: [], reorganized: [] },
+        explanation: null,
+      });
+    }
+
+    // Puxa campos com fallback de nomes
+    const newResume =
+      newResumeResult.newResume ??
+      newResumeResult.resume ??
+      newResumeResult.optimizedResume ??
+      newResumeResult.optimizedText ??
+      null;
+
+    const changes = newResumeResult.changes ?? {
+      added: [],
+      removed: [],
+      reorganized: [],
+    };
+
+    const explanation =
+      newResumeResult.explanation ??
+      newResumeResult.reason ??
+      newResumeResult.rationale ??
+      null;
+
+    return res.json({
+      newResume,
+      changes,
+      explanation,
+    });
+  } catch (err) {
+    console.error("[generateNewResume] erro:", err);
+    return res.status(500).json({
+      error: "Erro ao gerar novo currículo",
+      details: err?.message ?? String(err),
+    });
+  }
+};
+
 
 // Novo handler: simulação de entrevista (chamado pela rota)
 export const generateInterviewSimulation = async (req, res) => {
@@ -221,31 +412,74 @@ export const generateInterviewSimulation = async (req, res) => {
       return res.status(400).json({ error: "jobDescription é obrigatório." });
     }
 
-    // Prioriza resumeText enviado pelo front (recomendado)
     const textToUse = resumeText && String(resumeText).trim() ? String(resumeText).trim() : null;
     if (!textToUse) {
-      return res.status(400).json({ error: "resumeText ausente. Envie o texto extraído do currículo (campo 'resumeText')." });
+      return res.status(400).json({
+        error: "resumeText ausente. Envie o texto extraído do currículo (campo 'resumeText')."
+      });
     }
 
     let qa = [];
+    let interviewerQuestions = [];
+
     try {
       const result = await aiSimulateInterview(textToUse, jobDescription);
-      // result deve ser um array [{ question, answer }, ...]
-      if (Array.isArray(result) && result.length > 0) {
-        qa = result.map((it) => ({
-          question: it.question ?? it.pergunta ?? "",
-          answer: it.answer ?? it.resposta ?? ""
-        })).filter(x => x.question && x.answer);
+      /**
+       * Estrutura esperada:
+       * {
+       *   qa: [{ question, answer }],
+       *   questionsForRecruiter: ["Pergunta 1", "Pergunta 2", ...]
+       * }
+       */
+
+      if (Array.isArray(result)) {
+        // caso venha direto um array de QA
+        qa = result
+          .map((it) => ({
+            question: it.question ?? it.pergunta ?? it.q ?? "",
+            answer: it.answer ?? it.resposta ?? it.a ?? ""
+          }))
+          .filter((x) => x.question && x.answer);
+      } else if (result && typeof result === "object") {
+        // extrair QA
+        const arr =
+          result.qa ??
+          result.questionsAndAnswers ??
+          result.questions_and_answers ??
+          result.questions ??
+          result.items ??
+          result.data ??
+          null;
+
+        if (Array.isArray(arr)) {
+          qa = arr
+            .map((it) => ({
+              question: it.question ?? it.pergunta ?? it.q ?? "",
+              answer: it.answer ?? it.resposta ?? it.a ?? ""
+            }))
+            .filter((x) => x.question && x.answer);
+        }
+
+        // extrair perguntas para o entrevistador (mapeando corretamente)
+        interviewerQuestions =
+          result.interviewerQuestions ??          // fallback original
+          result.perguntasParaEntrevistador ??   // fallback em português
+          result.questions_to_interviewer ??     // fallback alternativo
+          result.questionsForRecruiter ??        // fallback do aiService
+          [];
       }
     } catch (aiErr) {
       console.error("[generateInterviewSimulation] erro aiService:", aiErr?.message || aiErr);
       qa = [];
+      interviewerQuestions = [];
     }
 
-    // sempre retornar objeto previsível
-    return res.json({ qa });
+    return res.json({ qa, interviewerQuestions });
   } catch (err) {
     console.error("[generateInterviewSimulation] erro:", err);
-    return res.status(500).json({ error: "Erro ao simular entrevista", details: err?.message ?? String(err) });
+    return res.status(500).json({
+      error: "Erro ao simular entrevista",
+      details: err?.message ?? String(err)
+    });
   }
 };
