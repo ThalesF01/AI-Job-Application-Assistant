@@ -1,20 +1,20 @@
 // src/config/awsConfig.js
-import dotenv from "dotenv";
-import { fromEnv } from "@aws-sdk/credential-providers";
 import { S3Client } from "@aws-sdk/client-s3";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import dotenv from "dotenv";
 
 dotenv.config();
 
-// pega região e nomes do .env
-const REGION = process.env.AWS_REGION || "us-east-1";
+// pega região do .env ou default
+const REGION = process.env.REGION_AWS || "us-east-1";
 
-const getCredentials = () => {
-  // Prioriza variáveis de ambiente (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY)
-  return fromEnv(); // provider que lê das env vars
-};
+// pega credenciais a partir das variáveis que você colocou no .env
+const getCredentials = () => ({
+  accessKeyId: process.env.ACCESS_AWS_KEY_ID,
+  secretAccessKey: process.env.SECRET_AWS_ACCESS_KEY,
+});
 
-// clientes AWS v3
+// clientes AWS v3 usando credenciais manuais
 export const s3Client = new S3Client({
   region: REGION,
   credentials: getCredentials(),
