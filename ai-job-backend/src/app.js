@@ -18,4 +18,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/applications", jobApplicationsRoutes);
 app.use("/api/ai", aiRoutes);
 
+// --- Health Check para ALB ---
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
 export default app;
