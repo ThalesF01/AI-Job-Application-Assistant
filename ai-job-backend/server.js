@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 // CORS: permitir frontend Next.js em dev. Ajuste origin em produção.
 app.use(
   cors({
-    origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000",
+    origin: "https://aijobapplicationassistant.vercel.app/",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
   })
