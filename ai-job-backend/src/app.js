@@ -5,41 +5,43 @@ import aiRoutes from "./routes/aiRoutes.js";
 
 const app = express();
 
-// Lista de origens permitidas (todas sem barra final)
+// SOLUÇÃO MAIS DIRETA: usar array simples
 const allowedOrigins = [
   "https://aijobapplicationassistant.vercel.app",
+  "https://aijobapplicationassistant.vercel.app/", // com barra também
   "https://otimizador-curriculo-h31lhff9x-thalesf01s-projects.vercel.app",
-  "http://localhost:3000"
+  "https://otimizador-curriculo-h31lhff9x-thalesf01s-projects.vercel.app/",
+  "http://localhost:3000",
+  "http://localhost:3000/"
 ];
 
 app.use(cors({
-  origin: function(origin, callback) {
-    // Permitir requisições sem origin (ex: aplicativos móveis, Postman)
-    if (!origin) return callback(null, true);
-    
-    // Remover barra final se existir
-    const cleanedOrigin = origin.replace(/\/$/, "");
-    
-    // Verificar se a origem está na lista permitida
-    if (allowedOrigins.includes(cleanedOrigin)) {
-      console.log("CORS permitido para origem:", cleanedOrigin);
-      return callback(null, true);
-    }
-    
-    console.log("CORS bloqueado para origem:", origin);
-    console.log("Origem limpa:", cleanedOrigin);
-    console.log("Origens permitidas:", allowedOrigins);
-    
-    return callback(new Error("Not allowed by CORS"));
-  },
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
 }));
 
-// Middleware para logs de debug
+// Middleware alternativo manual para casos extremos
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path} - Origin: ${req.headers.origin}`);
+  const origin = req.headers.origin;
+  console.log("=== REQUEST DEBUG ===");
+  console.log("Method:", req.method);
+  console.log("Origin:", origin);
+  console.log("Path:", req.path);
+  
+  // Se for uma requisição OPTIONS (preflight), responder manualmente
+  if (req.method === 'OPTIONS') {
+    console.log("Handling OPTIONS request manually");
+    res.header('Access-Control-Allow-Origin', origin?.replace(/\/$/, '') || '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.sendStatus(200);
+    return;
+  }
+  
   next();
 });
 
