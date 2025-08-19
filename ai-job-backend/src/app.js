@@ -1,4 +1,3 @@
-// app.js
 import express from "express";
 import cors from "cors";
 import jobApplicationsRoutes from "./routes/jobApplications.js";
@@ -6,35 +5,34 @@ import aiRoutes from "./routes/aiRoutes.js";
 
 const app = express();
 
-// Habilita CORS para permitir o front-end do localhost
+// Lista de origens permitidas
 const allowedOrigins = [
   "https://aijobapplicationassistant.vercel.app",
   "https://otimizador-curriculo-h31lhff9x-thalesf01s-projects.vercel.app",
   "http://localhost:3000"
 ];
 
+// CORS dinâmico
 app.use(cors({
-  origin: function(origin, callback){
-    if (!origin) return callback(null, true); // permite chamadas server-side (Postman, curl)
-    if (allowedOrigins.includes(origin)) {
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true); // chamadas server-side (Postman, curl)
+    // remove barra final se existir
+    const cleanedOrigin = origin.replace(/\/$/, "");
+    if (allowedOrigins.includes(cleanedOrigin)) {
       return callback(null, true);
-    } else {
-      return callback(new Error("Not allowed by CORS"));
     }
-  }
+    console.log("CORS bloqueado para origem:", origin);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true // importante para uploads com FormData ou auth
 }));
-
-
-
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// rotas
 app.use("/api/applications", jobApplicationsRoutes);
 app.use("/api/ai", aiRoutes);
 
-// --- Health Check para ALB ---
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
 });
