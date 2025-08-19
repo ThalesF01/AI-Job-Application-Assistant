@@ -7,7 +7,7 @@ import type {
 } from "./types";
 
 /* config */
-const BACKEND_URL = "URL https://ai-job-application-assistant.onrender.com";
+const BACKEND_URL = "https://ai-job-application-assistant.onrender.com";
 
 export async function uploadResume(file: File): Promise<UploadResponse> {
   const formData = new FormData();
