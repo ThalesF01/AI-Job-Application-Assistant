@@ -7,9 +7,23 @@ import aiRoutes from "./routes/aiRoutes.js";
 const app = express();
 
 // Habilita CORS para permitir o front-end do localhost
+const allowedOrigins = [
+  "https://aijobapplicationassistant.vercel.app",
+  "https://otimizador-curriculo-h31lhff9x-thalesf01s-projects.vercel.app",
+  "http://localhost:3000"
+];
+
 app.use(cors({
-  origin: "*"
+  origin: function(origin, callback){
+    if (!origin) return callback(null, true); // permite chamadas server-side (Postman, curl)
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error("Not allowed by CORS"));
+    }
+  }
 }));
+
 
 
 
