@@ -8,7 +8,7 @@ const app = express();
 
 // Habilita CORS para permitir o front-end do localhost
 app.use(cors({
-  origin: "https://aijobapplicationassistant.vercel.app/", // endereço do seu Next.js
+  origin: "https://aijobapplicationassistant.vercel.app", // endereço do seu Next.js
 }));
 
 app.use(express.json());
