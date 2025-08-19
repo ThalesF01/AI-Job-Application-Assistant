@@ -1,7 +1,7 @@
 // src/config/awsConfig.js
-import { S3Client } from "@aws-sdk/client-s3";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import dotenv from "dotenv";
+const { S3Client } = require("@aws-sdk/client-s3");
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const dotenv = require("dotenv");
 
 dotenv.config();
 
@@ -15,12 +15,14 @@ const getCredentials = () => ({
 });
 
 // clientes AWS v3 usando credenciais manuais
-export const s3Client = new S3Client({
+const s3Client = new S3Client({
   region: REGION,
   credentials: getCredentials(),
 });
 
-export const dynamoClient = new DynamoDBClient({
+const dynamoClient = new DynamoDBClient({
   region: REGION,
   credentials: getCredentials(),
 });
+
+module.exports = { s3Client, dynamoClient };

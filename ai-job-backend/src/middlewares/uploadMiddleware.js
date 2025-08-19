@@ -1,4 +1,6 @@
-import multer from "multer";
+const multer = require("multer");
 
 const storage = multer.memoryStorage(); // arquivo em memória
-export const upload = multer({ storage });
+const upload = multer({ storage });
+
+module.exports = upload ;

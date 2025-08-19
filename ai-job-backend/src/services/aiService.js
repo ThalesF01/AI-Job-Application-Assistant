@@ -1,5 +1,5 @@
 // src/services/aiService.js
-import Groq from "groq-sdk";
+const Groq = require("groq-sdk").default;
 
 let groq = null;
 if (process.env.GROQ_API_KEY) {
@@ -17,7 +17,7 @@ if (process.env.GROQ_API_KEY) {
 /**
  * generateResumeSummary - mantém a sua implementação original (pequenas mudanças de estilo)
  */
-export async function generateResumeSummary(resumeText) {
+async function generateResumeSummary(resumeText) {
   if (!resumeText?.trim()) return null;
   if (!groq) {
     throw new Error("Groq client não inicializado (GROQ_API_KEY ausente).");
@@ -112,7 +112,7 @@ Avaliação:
  * Retorna um objeto com os campos:
  * { optimizedResumeMarkdown, originalScore, optimizedScore, strengths, gaps, behavioralAnalysis }
  */
-export async function generateOptimizedResume(resumeText, jobDescription) {
+async function generateOptimizedResume(resumeText, jobDescription) {
   if (!resumeText || !resumeText.trim()) return null;
   if (!jobDescription || !jobDescription.trim()) {
     throw new Error("jobDescription é obrigatório para otimização.");
@@ -407,7 +407,7 @@ Apenas JSON como antes.`;
 /**
  * generateCoverLetter - mantive sua função mas sem mudanças semânticas
  */
-export async function generateCoverLetter(resumeText, jobDescription) {
+async function generateCoverLetter(resumeText, jobDescription) {
   if (!resumeText || !resumeText.trim()) return null;
   if (!jobDescription || !jobDescription.trim()) {
     throw new Error("jobDescription é obrigatório para gerar a carta de apresentação.");
@@ -460,11 +460,10 @@ Carta de apresentação:
   }
 }
 
-
 /**
  * generateNewResume 
  */
-export async function generateNewResume(resumeText) {
+async function generateNewResume(resumeText) {
   if (!resumeText || !resumeText.trim()) {
     throw new Error("resumeText é obrigatório para gerar o novo currículo.");
   }
@@ -681,12 +680,10 @@ ATENÇÃO CRÍTICA:
   }
 }
 
-
-
 /**
  * simulateInterview - mantém a função que já estava (com parsing tolerante e fallback)
  */
-export async function simulateInterview(resumeText, jobDescription) {
+ async function simulateInterview(resumeText, jobDescription) {
   if (!resumeText?.trim()) return null;
   if (!jobDescription?.trim()) {
     throw new Error("jobDescription é obrigatório para gerar a simulação de entrevista.");
@@ -812,3 +809,12 @@ Resposta (JSON):
     return { qa: [], interviewerQuestions: [] };
   }
 }
+
+
+module.exports = {
+  generateResumeSummary,
+  generateOptimizedResume,
+  generateCoverLetter,
+  generateNewResume,
+  simulateInterview,
+};

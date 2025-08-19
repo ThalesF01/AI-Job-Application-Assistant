@@ -1,40 +1,13 @@
 {
-  "name": "ai-job-backend",
+  "name": "job-app-backend",
   "version": "1.0.0",
-  "type": "module",
-  "description": "",
-  "main": "server.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "main": "lambda-handler.js",
+  "type": "commonjs",
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.868.0",
-    "@aws-sdk/client-s3": "^3.864.0",
-    "@aws-sdk/credential-providers": "^3.864.0",
-    "@aws-sdk/lib-dynamodb": "^3.868.0",
-    "@huggingface/inference": "^4.7.1",
-    "aws-sdk": "^2.1692.0",
-    "axios": "^1.11.0",
+    "express": "^4.18.0",
     "cors": "^2.8.5",
-    "cosine-similarity": "^1.0.1",
-    "dotenv": "^17.2.1",
-    "express": "^5.1.0",
-    "groq-sdk": "^0.30.0",
-    "mammoth": "^1.10.0",
-    "morgan": "^1.10.1",
-    "multer": "^2.0.2",
-    "openai": "^5.12.2",
-    "pdf-parse": "^1.1.1",
-    "serverless-http": "^3.4.0"
-  },
-  "devDependencies": {
-    "@types/express": "^5.0.3",
-    "@types/multer": "^2.0.0",
-    "@types/node": "^24.2.1",
-    "typescript": "^5.9.2"
+    "aws-sdk": "^2.1400.0",
+    "multer": "^1.4.5-lts.1",
+    "serverless-http": "^3.2.0"
   }
 }

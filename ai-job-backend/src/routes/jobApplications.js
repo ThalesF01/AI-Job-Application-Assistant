@@ -1,7 +1,11 @@
 // src/routes/jobApplications.js
-import express from "express";
-import multer from "multer";
-import { createApplication, generateOptimizedResume, generateCoverLetter, generateInterviewSimulation, generateNewResume } from "../controllers/applicationsController.js";
+const express = require("express");
+const multer = require("multer");
+const createApplication = require("../controllers/applicationsController.js").createApplication;
+const generateOptimizedResume = require("../controllers/applicationsController.js").generateOptimizedResume;
+const generateCoverLetter = require("../controllers/applicationsController.js").generateCoverLetter;
+const generateInterviewSimulation = require("../controllers/applicationsController.js").generateInterviewSimulation;
+const generateNewResume = require("../controllers/applicationsController.js").generateNewResume;
 
 const router = express.Router();
 const upload = multer(); // memory storage
@@ -21,4 +25,4 @@ router.post("/generate/cover-letter", express.json(), generateCoverLetter);
 // rota para simulação de entrevista (body: { resumeText, jobDescription })
 router.post("/generate/interview", express.json(), generateInterviewSimulation);
 
-export default router;
+module.exports = router;

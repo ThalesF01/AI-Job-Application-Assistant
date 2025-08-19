@@ -1,17 +1,17 @@
 // src/controllers/applicationsController.js
-import fs from "fs";
-import path from "path";
-import axios from "axios";
-import { uploadFile } from "../services/s3Service.js";
-import { saveApplication } from "../services/dynamoService.js";
-import {
-  generateOptimizedResume as aiGenerateOptimizedResume,
-  generateCoverLetter as aiGenerateCoverLetter,
-  simulateInterview as aiSimulateInterview,
-  generateNewResume as aiGenerateNewResume,
-} from "../services/aiService.js";
+const fs = require("fs");
+const path = require("path");
+const axios = require("axios");
 
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
+const { uploadFile } = require("../services/s3Service.js");
+const { saveApplication } = require("../services/dynamoService.js");
+const {
+  generateOptimizedResume: aiGenerateOptimizedResume,
+  generateCoverLetter: aiGenerateCoverLetter,
+  simulateInterview: aiSimulateInterview,
+  generateNewResume: aiGenerateNewResume,
+} = require("../services/aiService.js");
+
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -22,21 +22,21 @@ async function extractTextFromBuffer(buffer, originalName) {
 
   try {
     if (lower.endsWith(".pdf")) {
-      const mod = await import("pdf-parse").catch((e) => {
-        console.warn("import pdf-parse failed:", e?.message || e);
-        return null;
-      });
-      pdfParse = mod ? (mod.default ?? mod) : null;
-    }
+  try {
+    pdfParse = require("pdf-parse"); // CommonJS
+  } catch (e) {
+    console.warn("require pdf-parse failed:", e?.message || e);
+  }
+}
     if (lower.endsWith(".docx")) {
-      const mod = await import("mammoth").catch((e) => {
-        console.warn("import mammoth failed:", e?.message || e);
-        return null;
-      });
-      mammoth = mod ? (mod.default ?? mod) : null;
-    }
+  try {
+    mammoth = require("mammoth"); // CommonJS
+  } catch (e) {
+    console.warn("require mammoth failed:", e?.message || e);
+  }
+}
   } catch (impErr) {
-    console.warn("[extractTextFromBuffer] erro no import dinâmico:", impErr?.message || impErr);
+    console.warn("[extractTextFromBuffer] erro dinâmico:", impErr?.message || impErr);
   }
 
   try {
@@ -82,7 +82,7 @@ async function extractTextFromBuffer(buffer, originalName) {
   }
 }
 
-export const createApplication = async (req, res) => {
+const createApplication = async (req, res) => {
   let localPath = null;
   try {
     if (!req.file) return res.status(400).json({ error: "Nenhum arquivo enviado." });
@@ -120,20 +120,6 @@ export const createApplication = async (req, res) => {
     const resumeText = await extractTextFromBuffer(req.file.buffer, originalName);
     const extractedText = resumeText ? (resumeText.length > 10000 ? resumeText.slice(0, 10000) : resumeText) : "";
 
-    // chamar IA (FastAPI por padrão) — timeout longo para evitar falha em modelos pesados
-    let summary = null;
-    if (resumeText && resumeText.length > 50) {
-      try {
-        const aiRes = await axios.post(`${AI_SERVICE_URL}/summarize`, { resumeText }, { timeout: 120000 });
-        summary = aiRes?.data?.summary ?? null;
-      } catch (aiErr) {
-        console.warn("[createApplication] erro ao chamar IA (não falha upload):", aiErr?.message || aiErr);
-        summary = null;
-      }
-    } else {
-      console.warn("[createApplication] sem texto extraído; pulando chamada à IA.");
-    }
-
     // devolve JSON compatível com frontend
     return res.status(201).json({
       message: "Aplicação salva",
@@ -156,7 +142,7 @@ export const createApplication = async (req, res) => {
 };
 
 // Novo handler: gerar currículo otimizado (chamado pela rota)
-export const generateOptimizedResume = async (req, res) => {
+const generateOptimizedResume = async (req, res) => {
   try {
     const { resumeText, resume_id, jobDescription } = req.body;
 
@@ -180,21 +166,6 @@ export const generateOptimizedResume = async (req, res) => {
     } catch (aiErr) {
       console.error("[generateOptimizedResume] erro aiService:", aiErr?.message || aiErr);
       optimizedResult = null;
-    }
-
-    // Fallback: tentar proxy para AI_SERVICE_URL (se configurado)
-    if (!optimizedResult) {
-      try {
-        const aiRes = await axios.post(
-          `${AI_SERVICE_URL}/optimize`,
-          { resumeText: textToUse, jobDescription },
-          { timeout: 120000 }
-        );
-        optimizedResult = aiRes?.data ?? null;
-      } catch (proxyErr) {
-        console.warn("[generateOptimizedResume] fallback FastAPI falhou:", proxyErr?.message || proxyErr);
-        optimizedResult = null;
-      }
     }
 
     // normalized response shape
@@ -277,7 +248,7 @@ export const generateOptimizedResume = async (req, res) => {
 };
 
 // Novo handler: gerar carta de apresentação (chamado pela rota)
-export const generateCoverLetter = async (req, res) => {
+const generateCoverLetter = async (req, res) => {
   try {
     const { resumeText, jobDescription } = req.body;
 
@@ -297,17 +268,6 @@ export const generateCoverLetter = async (req, res) => {
       coverLetter = null;
     }
 
-    // fallback proxy
-    if (!coverLetter) {
-      try {
-        const aiRes = await axios.post(`${AI_SERVICE_URL}/cover-letter`, { resumeText, jobDescription }, { timeout: 120000 });
-        coverLetter = aiRes?.data?.coverLetter ?? aiRes?.data?.cover_letter ?? aiRes?.data?.coverLetterMarkdown ?? aiRes?.data?.coverLetterMarkdown ?? null;
-      } catch (proxyErr) {
-        console.warn("[generateCoverLetter] fallback FastAPI falhou:", proxyErr?.message || proxyErr);
-        coverLetter = null;
-      }
-    }
-
     return res.json({ coverLetterMarkdown: coverLetter });
   } catch (err) {
     console.error("[generateCoverLetter] erro:", err);
@@ -316,7 +276,7 @@ export const generateCoverLetter = async (req, res) => {
 };
 
 // Novo handler: gerar carta de apresentação (chamado pela rota)
-export const generateNewResume = async (req, res) => {
+const generateNewResume = async (req, res) => {
   try {
     const { resumeText } = req.body;
 
@@ -335,20 +295,6 @@ export const generateNewResume = async (req, res) => {
       newResumeResult = null;
     }
 
-    // Fallback: tenta proxy FastAPI
-    if (!newResumeResult) {
-      try {
-        const aiRes = await axios.post(
-          `${AI_SERVICE_URL}/new-resume`,
-          { resumeText: textToUse },
-          { timeout: 120000 }
-        );
-        newResumeResult = aiRes?.data ?? null;
-      } catch (proxyErr) {
-        console.warn("[generateNewResume] fallback FastAPI falhou:", proxyErr?.message || proxyErr);
-        newResumeResult = null;
-      }
-    }
 
     // Normaliza a resposta
     if (!newResumeResult) {
@@ -402,9 +348,8 @@ export const generateNewResume = async (req, res) => {
   }
 };
 
-
 // Novo handler: simulação de entrevista (chamado pela rota)
-export const generateInterviewSimulation = async (req, res) => {
+const generateInterviewSimulation = async (req, res) => {
   try {
     const { resumeText, resume_id, jobDescription } = req.body;
 
@@ -482,4 +427,12 @@ export const generateInterviewSimulation = async (req, res) => {
       details: err?.message ?? String(err)
     });
   }
+};
+
+module.exports = {
+  createApplication,
+  generateOptimizedResume,
+  generateCoverLetter,
+  generateNewResume,
+  generateInterviewSimulation,
 };

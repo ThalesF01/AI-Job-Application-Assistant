@@ -1,7 +1,7 @@
 // src/services/s3Service.js
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { s3Client } from "../config/awsConfig.js";
-import dotenv from "dotenv";
+const { PutObjectCommand } = require("@aws-sdk/client-s3");
+const { s3Client } = require("../config/awsConfig.js");
+const dotenv = require("dotenv");
 dotenv.config();
 
 const BUCKET = process.env.S3_BUCKET_NAME;
@@ -10,7 +10,7 @@ if (!BUCKET) {
   throw new Error("S3_BUCKET_NAME não configurado no .env");
 }
 
-export const uploadFile = async (buffer, key, contentType) => {
+const uploadFile = async (buffer, key, contentType) => {
   try {
     const params = {
       Bucket: BUCKET,
@@ -34,3 +34,5 @@ export const uploadFile = async (buffer, key, contentType) => {
     throw err;
   }
 };
+
+module.exports = uploadFile ;

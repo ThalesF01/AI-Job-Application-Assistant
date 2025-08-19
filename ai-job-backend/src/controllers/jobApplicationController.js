@@ -1,8 +1,8 @@
-import { uploadFile } from "../services/s3Service.js";
-import { saveApplication, getApplicationById } from "../services/dynamoService.js";
-import { generateOptimizedResume } from "../services/aiService.js"; // função que chama Groq
+const { uploadFile } = require("../services/s3Service.js");
+const { saveApplication, getApplicationById } = require("../services/dynamoService.js");
+const { generateOptimizedResume } = require("../services/aiService.js");
 
-export const createApplication = async (req, res) => {
+const createApplication = async (req, res) => {
   try {
     const { name, email } = req.body;
     const file = req.file;
@@ -36,7 +36,7 @@ export const createApplication = async (req, res) => {
   }
 };
 
-export const parseApplication = async (req, res) => {
+const parseApplication = async (req, res) => {
   try {
     const { id } = req.params;
     console.log("Resume ID recebido para parse:", id);
@@ -63,7 +63,7 @@ export const parseApplication = async (req, res) => {
   }
 };
 
-export const generateOptimizedResume = async (req, res) => {
+const generateOptimizedResume = async (req, res) => {
   try {
     const { resume_id, resumeText, job_description } = req.body;
     if (!resumeText || !job_description) {
@@ -93,4 +93,10 @@ export const generateOptimizedResume = async (req, res) => {
     console.error("[generateOptimizedResume] erro:", err);
     return res.status(500).json({ error: "Erro interno ao otimizar currículo" });
   }
+};
+
+module.exports = {
+  createApplication,
+  parseApplication,
+  generateOptimizedResume,
 };
