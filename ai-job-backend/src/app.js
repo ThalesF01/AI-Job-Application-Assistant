@@ -12,10 +12,9 @@ const allowedOrigins = [
   "http://localhost:3000"
 ];
 
-// CORS dinâmico
 app.use(cors({
   origin: function(origin, callback) {
-    if (!origin) return callback(null, true); // chamadas server-side (Postman, curl)
+    if (!origin) return callback(null, true); // server-side requests
     // remove barra final se existir
     const cleanedOrigin = origin.replace(/\/$/, "");
     if (allowedOrigins.includes(cleanedOrigin)) {
@@ -24,7 +23,7 @@ app.use(cors({
     console.log("CORS bloqueado para origem:", origin);
     return callback(new Error("Not allowed by CORS"));
   },
-  credentials: true // importante para uploads com FormData ou auth
+  credentials: true
 }));
 
 app.use(express.json());
