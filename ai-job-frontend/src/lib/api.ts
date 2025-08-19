@@ -7,7 +7,7 @@ import type {
 } from "./types";
 
 /* config */
-const BACKEND_URL = "https://j7f32lez50.execute-api.us-east-1.amazonaws.com/prod";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
 export async function uploadResume(file: File): Promise<UploadResponse> {
   const formData = new FormData();

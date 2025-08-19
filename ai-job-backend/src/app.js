@@ -1,20 +1,14 @@
-// app.js - Versão CommonJS para Lambda
-const express = require("express");
-const cors = require("cors");
-const jobApplicationsRoutes = require("./routes/jobApplications.js");
-const aiRoutes = require("./routes/aiRoutes.js");
+// app.js
+import express from "express";
+import cors from "cors";
+import jobApplicationsRoutes from "./routes/jobApplications.js";
+import aiRoutes from "./routes/aiRoutes.js";
 
 const app = express();
 
-// CORS para desenvolvimento e produção
+// Habilita CORS para permitir o front-end do localhost
 app.use(cors({
-  origin: [
-    "http://localhost:3000", // desenvolvimento
-    "https://main.d1gm9513m1780w.amplifyapp.com" // produção
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: "http://localhost:3000", // endereço do seu Next.js
 }));
 
 app.use(express.json());
@@ -29,12 +23,4 @@ app.get("/health", (req, res) => {
   res.status(200).send("OK");
 });
 
-// Rota de teste adicional
-app.get("/", (req, res) => {
-  res.json({ 
-    message: "Backend funcionando!",
-    timestamp: new Date().toISOString()
-  });
-});
-
-module.exports = app;
+export default app;

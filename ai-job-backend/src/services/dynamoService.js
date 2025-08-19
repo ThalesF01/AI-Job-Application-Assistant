@@ -1,16 +1,16 @@
 // src/services/dynamoService.js
-const dotenv = require("dotenv");
+import dotenv from "dotenv";
 dotenv.config();
 
-const { DynamoDBDocumentClient, PutCommand } = require("@aws-sdk/lib-dynamodb");
-const { dynamoClient } = require("../config/awsConfig");
+import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { dynamoClient } from "../config/awsConfig.js";
 
 const TABLE = process.env.DYNAMO_TABLE_NAME;
 if (!TABLE) throw new Error("DYNAMO_TABLE_NAME não configurado no .env");
 
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 
-const saveApplication = async (application) => {
+export const saveApplication = async (application) => {
   try {
     const params = {
       TableName: TABLE,
@@ -26,8 +26,6 @@ const saveApplication = async (application) => {
   }
 };
 
-const getApplicationById = async (id) => {
+export const getApplicationById = async (id) => {
   // opcional: implementar GetCommand se precisar buscar; deixei apenas Put por enquanto
 };
-
-module.exports = { saveApplication, getApplicationById };
