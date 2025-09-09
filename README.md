@@ -89,7 +89,7 @@ Abaixo está um resumo visual das principais funcionalidades do AI Job Assistant
 
 1. Clone o repositório:
 ```bash
-git clone https://github.com/ThalesF01/ai-job-assistant.git
+git clone https://github.com/ThalesF01/AI-Job-Application-Assistant
 cd ai-job-assistant
 npm install
 GROQ_API_KEY=SEU_TOKEN
